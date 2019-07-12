@@ -9,7 +9,8 @@ extern CanTxMsg TxMessage01;
 extern CanTxMsg TxMessage02;
 
 extern u8 CANpackMsNum;		//CAN包计数0-9
-u8 CANFrameNum = 0;			//CAN包每秒计数0-255
+u8 CAN1FrameNum = 0;			//CAN1包每秒计数0-255
+u8 CAN2FrameNum = 0;			//CAN2包每秒计数0-255
 
 void Tim2_Init(u16 arr,u16 psc)
 {
@@ -47,13 +48,13 @@ void Tim3_Init(u16 arr,u16 psc)
 static void zeroTxMsgData(CanTxMsg *RxMessage)
 {
 	uint8_t i = 0;
-	for (i = 2; i < 8; i++)
+	for (i = 0; i < 8; i++)
 	{
-		RxMessage->Data[i] = 0;
+		RxMessage->Data[i] = 0x00;
 	}
 }
 
-static void sendCANMsg(CAN_TypeDef* CANx, CanTxMsg* TxMessage)
+static void sendCANMsg(CAN_TypeDef* CANx, CanTxMsg* TxMessage,u8* CANFrameNum)
 {
 	u8 arrIndex = 0, frameNum = 0;	
 	
@@ -63,7 +64,7 @@ static void sendCANMsg(CAN_TypeDef* CANx, CanTxMsg* TxMessage)
 		{
 			case 0:
 				arrIndex = 0;
-				TxMessage->Data[arrIndex++] = CANFrameNum;
+				TxMessage->Data[arrIndex++] = *CANFrameNum;
 				TxMessage->Data[arrIndex++] = CANpackMsNum;
 				TxMessage->Data[arrIndex++] = akq.msg_to_akq.ux450_data.hour;
 				TxMessage->Data[arrIndex++] = akq.msg_to_akq.ux450_data.minute;
@@ -74,7 +75,7 @@ static void sendCANMsg(CAN_TypeDef* CANx, CanTxMsg* TxMessage)
 				break;
 			case 1:
 				arrIndex = 0;
-				TxMessage->Data[arrIndex++] = CANFrameNum;
+				TxMessage->Data[arrIndex++] = *CANFrameNum;
 				TxMessage->Data[arrIndex++] = CANpackMsNum;
 				TxMessage->Data[arrIndex++] = akq.msg_to_akq.ux450_data.longitude >> 24;
 				TxMessage->Data[arrIndex++] = akq.msg_to_akq.ux450_data.longitude >> 16;
@@ -85,7 +86,7 @@ static void sendCANMsg(CAN_TypeDef* CANx, CanTxMsg* TxMessage)
 				break;
 			case 2:
 				arrIndex = 0;
-				TxMessage->Data[arrIndex++] = CANFrameNum;
+				TxMessage->Data[arrIndex++] = *CANFrameNum;
 				TxMessage->Data[arrIndex++] = CANpackMsNum;
 				TxMessage->Data[arrIndex++] = akq.msg_to_akq.ux450_data.latitude >> 24;
 				TxMessage->Data[arrIndex++] = akq.msg_to_akq.ux450_data.latitude >> 16;
@@ -96,7 +97,7 @@ static void sendCANMsg(CAN_TypeDef* CANx, CanTxMsg* TxMessage)
 				break;
 			case 3:
 				arrIndex = 0;
-				TxMessage->Data[arrIndex++] = CANFrameNum;
+				TxMessage->Data[arrIndex++] = *CANFrameNum;
 				TxMessage->Data[arrIndex++] = CANpackMsNum;
 				TxMessage->Data[arrIndex++] = akq.msg_to_akq.ux450_data.flightangle >> 8;	
 				TxMessage->Data[arrIndex++] = akq.msg_to_akq.ux450_data.flightangle;
@@ -107,15 +108,16 @@ static void sendCANMsg(CAN_TypeDef* CANx, CanTxMsg* TxMessage)
 				break;
 			default:
 				break;
-		}	
-		
+		}
+
 		if(CAN_Transmit(CANx, TxMessage) != CAN_NO_MB)
 		{
-			++CANFrameNum;
+//			++*CANFrameNum;
 			++frameNum;
 		}
 		zeroTxMsgData(TxMessage);
 	}
+	++*CANFrameNum;
 }
 //定时器2中断服务程序
 void TIM2_IRQHandler(void)   //TIM3中断
@@ -141,8 +143,8 @@ void TIM2_IRQHandler(void)   //TIM3中断
 		BD2GPS_CheckSum((u8*)sendmsg,sizeof(MSG_TO_AKQ_TAG)-1,&sendmsg[29]);	
 		MyDMA_Enable(DMA1_Channel2,30);	
 		
-		sendCANMsg(CAN1, &TxMessage01);
-		sendCANMsg(CAN2, &TxMessage02);
+		sendCANMsg(CAN1, &TxMessage01, &CAN1FrameNum);
+		sendCANMsg(CAN2, &TxMessage02, &CAN2FrameNum);
 
 /////////////////////////////////////////////////////////////////////////////////////		
 		Tim3_Init(999,7199); 	
@@ -172,8 +174,8 @@ void TIM3_IRQHandler(void)   //TIM3中断
 		BD2GPS_CheckSum((u8*)sendmsg,sizeof(MSG_TO_AKQ_TAG)-1,&sendmsg[29]);
 		MyDMA_Enable(DMA1_Channel2,30);	
 		
-		sendCANMsg(CAN1, &TxMessage01);
-		sendCANMsg(CAN2, &TxMessage02);
+		sendCANMsg(CAN1, &TxMessage01, &CAN1FrameNum);
+		sendCANMsg(CAN2, &TxMessage02, &CAN2FrameNum);
 
 /////////////////////////////////////////////////////////////////////////////////////		
 	}
