@@ -27,6 +27,19 @@ void Nvic_Init(void)
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;         // œÏ”¶
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStructure);			
+	
+	//CAN1
+	NVIC_InitStructure.NVIC_IRQChannel = CAN1_RX0_IRQn;	   //CAN1 RX0÷–∂œ
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2;	
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);
+	//CAN2
+	NVIC_InitStructure.NVIC_IRQChannel = CAN2_RX0_IRQn;	   //CAN2 RX0÷–∂œ
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2;	
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);
 }
 
 
