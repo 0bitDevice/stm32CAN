@@ -2,6 +2,8 @@
 
 CanTxMsg TxMessage01;
 CanTxMsg TxMessage02;
+CanRxMsg RxMessage;
+__IO uint32_t flag = 0xff;		 //用于标志是否接收到数据，在中断函数中赋值
 
 void CAN_Config(void)
 {
@@ -81,21 +83,32 @@ void CAN_Config(void)
 
 ///////////////////////////////未使用/////////////////////////////////////////
 	/* CAN1 filter init */
-	CAN_FilterInitStructure.CAN_FilterNumber = 1;
+	CAN_FilterInitStructure.CAN_FilterNumber = 0;
 	CAN_FilterInitStructure.CAN_FilterMode = CAN_FilterMode_IdMask;
 	CAN_FilterInitStructure.CAN_FilterScale = CAN_FilterScale_32bit;
-	CAN_FilterInitStructure.CAN_FilterIdHigh = 0x6420;
-	CAN_FilterInitStructure.CAN_FilterIdLow = 0x0000;
-	CAN_FilterInitStructure.CAN_FilterMaskIdHigh = 0x0000;
-	CAN_FilterInitStructure.CAN_FilterMaskIdLow = 0x0000;
-	CAN_FilterInitStructure.CAN_FilterFIFOAssignment = 0;
-	CAN_FilterInitStructure.CAN_FilterActivation = DISABLE;
+    CAN_FilterInitStructure.CAN_FilterIdHigh= (((u32)0x1314<<3)&0xFFFF0000)>>16;				//要过滤的ID高位 
+    CAN_FilterInitStructure.CAN_FilterIdLow= (((u32)0x1314<<3)|CAN_ID_EXT|CAN_RTR_DATA)&0xFFFF; //要过滤的ID低位 
+	CAN_FilterInitStructure.CAN_FilterMaskIdHigh = 0xFFFF;
+	CAN_FilterInitStructure.CAN_FilterMaskIdLow = 0xFFFF;
+	CAN_FilterInitStructure.CAN_FilterFIFOAssignment = CAN_Filter_FIFO0;
+	CAN_FilterInitStructure.CAN_FilterActivation = ENABLE;
 	CAN_FilterInit(&CAN_FilterInitStructure);
 
-	/* CAN2 filter init */
-	CAN_FilterInitStructure.CAN_FilterIdHigh =0x2460;
-	CAN_FilterInitStructure.CAN_FilterNumber = 15;
+	CAN_ITConfig(CAN1, CAN_IT_FMP0, ENABLE);
+	
+	CAN_SlaveStartBank(14);
+	CAN_FilterInitStructure.CAN_FilterNumber = 14;
+	CAN_FilterInitStructure.CAN_FilterMode = CAN_FilterMode_IdMask;
+	CAN_FilterInitStructure.CAN_FilterScale = CAN_FilterScale_32bit;
+    CAN_FilterInitStructure.CAN_FilterIdHigh= (((u32)0x1315<<3)&0xFFFF0000)>>16;				//要过滤的ID高位 
+    CAN_FilterInitStructure.CAN_FilterIdLow= (((u32)0x1315<<3)|CAN_ID_EXT|CAN_RTR_DATA)&0xFFFF; //要过滤的ID低位 
+	CAN_FilterInitStructure.CAN_FilterMaskIdHigh = 0xFFFF;
+	CAN_FilterInitStructure.CAN_FilterMaskIdLow = 0xFFFF;
+	CAN_FilterInitStructure.CAN_FilterFIFOAssignment = CAN_Filter_FIFO0;
+	CAN_FilterInitStructure.CAN_FilterActivation = ENABLE;
 	CAN_FilterInit(&CAN_FilterInitStructure);
+
+	CAN_ITConfig(CAN2, CAN_IT_FMP0, ENABLE);
 //////////////////////////////////未使用///////////////////////////////////////
 
 	/* Transmit */
@@ -110,4 +123,34 @@ void CAN_Config(void)
 	TxMessage02.RTR = CAN_RTR_DATA;
 	TxMessage02.IDE = CAN_ID_STD;
 	TxMessage02.DLC = 8;  
+}
+
+void CAN1_RX0_IRQHandler(void)
+{
+	CAN_Receive(CAN1, CAN_FIFO0, &RxMessage);
+
+//	if((RxMessage.ExtId==0x1314) && (RxMessage.IDE==CAN_ID_EXT)
+//	&& (RxMessage.DLC==2) && ((RxMessage.Data[1]|RxMessage.Data[0]<<8)==0xDCBA))
+//	{
+//		flag = 0x00;
+//	}
+//	else
+//	{
+//		flag = 0xff;
+//	}
+}
+
+void CAN2_RX0_IRQHandler(void)
+{
+	CAN_Receive(CAN2, CAN_FIFO1, &RxMessage);
+
+//	if((RxMessage.ExtId==0x1314) && (RxMessage.IDE==CAN_ID_EXT)
+//	&& (RxMessage.DLC==2) && ((RxMessage.Data[1]|RxMessage.Data[0]<<8)==0xDCBA))
+//	{
+//		flag = 0x00;
+//	}
+//	else
+//	{
+//		flag = 0xff;
+//	}
 }
